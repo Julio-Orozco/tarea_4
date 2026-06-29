@@ -288,7 +288,7 @@ function cambiarEstado(id) {
 }
 
 /*==================================================
-            ABRIR MODAL DE ACCIONES (nuevo)
+            ABRIR MODAL DE ACCIONES
 ==================================================*/
 
 function abrirModalAcciones(id) {
@@ -401,7 +401,6 @@ function irARegistrarHistorial(id) {
         if (selector) {
             selector.value = id;
         }
-        // Limpiar cualquier edición pendiente
         delete document.getElementById("formHistorial").dataset.editando;
         modalHistorial.classList.add("activo");
     }, 100);
@@ -510,7 +509,6 @@ function renderGraficoNivel(lista = estudiantes) {
 
     };
 
-    // Obtener niveles desde el historial
     historial.forEach(h => {
         if (niveles[h.nivel] !== undefined) {
             niveles[h.nivel]++;
@@ -644,7 +642,37 @@ function renderGraficoRiesgo(lista = estudiantes) {
 }
 
 /*==================================================
-        GRÁFICO DE LÍNEAS - EVOLUCIÓN MENSUAL (nuevo)
+        FILTRO POR PROGRAMA (Donut)
+==================================================*/
+
+function filtrarPorPrograma(programa) {
+    const filtrados = historial.filter(h => h.programa === programa);
+    const idsUnicos = [...new Set(filtrados.map(h => h.estudianteId))];
+    const estudiantesFiltrados = estudiantes.filter(e => idsUnicos.includes(e.id));
+
+    actualizarDashboard(estudiantesFiltrados);
+    renderGraficoNivel(filtrados);
+    renderGraficoRiesgo(filtrados);
+    renderGraficoLinea();
+    renderGraficoDonut();
+
+    mostrarToast(`📊 Filtrado por programa: ${programa}`);
+}
+
+/*==================================================
+        FILTRO POR MES (Línea)
+==================================================*/
+
+function filtrarPorMes(mesIndex) {
+    const totalActivos = estudiantes.filter(e => e.estado).length;
+    const factor = 0.65 + (mesIndex * 0.07);
+    const cantidad = Math.round(totalActivos * Math.min(factor, 1));
+    const meses = ['Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    mostrarToast(`📊 Evolución en ${meses[mesIndex]}: ${cantidad} estudiantes activos`);
+}
+
+/*==================================================
+        GRÁFICO DE LÍNEAS - EVOLUCIÓN MENSUAL
 ==================================================*/
 
 function renderGraficoLinea() {
@@ -657,7 +685,6 @@ function renderGraficoLinea() {
 
     const meses = ['Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    // Calcular evolución de activos (simulado con datos reales)
     const activosPorMes = [];
     const totalActivos = estudiantes.filter(e => e.estado).length;
 
@@ -735,10 +762,15 @@ function renderGraficoLinea() {
     ctx.lineWidth = 3;
     ctx.stroke();
 
+    // Guardar puntos para clics
+    canvas.puntos = [];
+
     // Puntos y etiquetas
     activosPorMes.forEach((v, i) => {
         const cx = x(i);
         const cy = y(v);
+
+        canvas.puntos.push({ x: cx, y: cy, index: i });
 
         ctx.beginPath();
         ctx.arc(cx, cy, 6, 0, Math.PI * 2);
@@ -754,6 +786,32 @@ function renderGraficoLinea() {
         ctx.fillText(v, cx, cy - 14);
     });
 
+    // Event listener para clics en el gráfico de líneas
+    canvas.onclick = function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+
+        let minDist = 30;
+        let foundIndex = -1;
+
+        if (canvas.puntos) {
+            canvas.puntos.forEach(p => {
+                const dist = Math.sqrt((mouseX - p.x) ** 2 + (mouseY - p.y) ** 2);
+                if (dist < minDist) {
+                    minDist = dist;
+                    foundIndex = p.index;
+                }
+            });
+
+            if (foundIndex !== -1) {
+                filtrarPorMes(foundIndex);
+            }
+        }
+    };
+
     // Animación
     canvas.style.opacity = '0';
     setTimeout(() => {
@@ -763,7 +821,7 @@ function renderGraficoLinea() {
 }
 
 /*==================================================
-        GRÁFICO DONUT - DISTRIBUCIÓN POR PROGRAMA (nuevo)
+        GRÁFICO DONUT - DISTRIBUCIÓN POR PROGRAMA
 ==================================================*/
 
 function renderGraficoDonut() {
@@ -798,11 +856,20 @@ function renderGraficoDonut() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Guardar datos para detección de clics
+    canvas.segmentos = [];
+
     values.forEach((valor, i) => {
         if (valor === 0) return;
 
         const fraccion = valor / total;
         const anguloFin = anguloInicio + (fraccion * 2 * Math.PI);
+
+        canvas.segmentos.push({
+            anguloInicio: anguloInicio,
+            anguloFin: anguloFin,
+            programa: labels[i]
+        });
 
         ctx.beginPath();
         ctx.moveTo(centroX, centroY);
@@ -814,33 +881,31 @@ function renderGraficoDonut() {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        if (fraccion > 0.08) {
-            const anguloMedio = anguloInicio + (fraccion * Math.PI);
-            const textoX = centroX + (radio * 0.6) * Math.cos(anguloMedio);
-            const textoY = centroY + (radio * 0.6) * Math.sin(anguloMedio);
+        // Porcentaje centrado correctamente
+        const anguloMedio = anguloInicio + (fraccion * Math.PI);
+        const textoX = centroX + (radio * 0.65) * Math.cos(anguloMedio);
+        const textoY = centroY + (radio * 0.65) * Math.sin(anguloMedio);
 
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 16px Segoe UI, Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(porcentajes[i] + '%', textoX, textoY);
-        }
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 18px Segoe UI, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(porcentajes[i] + '%', textoX, textoY);
 
         anguloInicio = anguloFin;
     });
 
     // Círculo interior
     ctx.beginPath();
-    ctx.arc(centroX, centroY, 65, 0, 2 * Math.PI);
+    ctx.arc(centroX, centroY, 60, 0, 2 * Math.PI);
     ctx.fillStyle = 'white';
-    ctx.fill();
     ctx.shadowColor = 'rgba(0,0,0,0.05)';
     ctx.shadowBlur = 10;
     ctx.fill();
     ctx.shadowBlur = 0;
 
     ctx.fillStyle = '#6C3CE1';
-    ctx.font = 'bold 22px Segoe UI, Arial, sans-serif';
+    ctx.font = 'bold 20px Segoe UI, Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(total, centroX, centroY - 8);
@@ -860,6 +925,8 @@ function renderGraficoDonut() {
             item.style.gap = '10px';
             item.style.fontSize = '14px';
             item.style.color = '#333';
+            item.style.cursor = 'pointer';
+            item.onclick = () => filtrarPorPrograma(label);
 
             const colorBox = document.createElement('span');
             colorBox.style.display = 'inline-block';
@@ -877,6 +944,45 @@ function renderGraficoDonut() {
         });
     }
 
+    // Event listener para clics en el Donut
+    canvas.onclick = function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left - rect.width/2) * scaleX;
+        const mouseY = (e.clientY - rect.top - rect.height/2) * scaleY;
+
+        const distancia = Math.sqrt(mouseX * mouseX + mouseY * mouseY);
+
+        if (distancia < radio && distancia > 60) {
+            let angulo = Math.atan2(mouseY, mouseX);
+            if (angulo < 0) angulo += 2 * Math.PI;
+
+            // Ajustar por el offset inicial (-PI/2)
+            let anguloAjustado = (angulo + Math.PI/2) % (2 * Math.PI);
+
+            if (canvas.segmentos) {
+                for (const seg of canvas.segmentos) {
+                    let inicio = (seg.anguloInicio + 2 * Math.PI) % (2 * Math.PI);
+                    let fin = (seg.anguloFin + 2 * Math.PI) % (2 * Math.PI);
+
+                    if (inicio > fin) {
+                        if (anguloAjustado >= inicio || anguloAjustado < fin) {
+                            filtrarPorPrograma(seg.programa);
+                            return;
+                        }
+                    } else {
+                        if (anguloAjustado >= inicio && anguloAjustado < fin) {
+                            filtrarPorPrograma(seg.programa);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    // Animación
     canvas.style.opacity = '0';
     setTimeout(() => {
         canvas.style.transition = 'opacity 0.8s ease';
@@ -904,7 +1010,6 @@ function filtrarDashboard(tipo, valor) {
 
     }
 
-    // Obtener estudiantes únicos de los filtrados
     const idsUnicos = [...new Set(filtrados.map(h => h.estudianteId))];
     const estudiantesFiltrados = estudiantes.filter(e => idsUnicos.includes(e.id));
 
@@ -935,6 +1040,8 @@ document
         renderGraficoLinea();
 
         renderGraficoDonut();
+
+        mostrarToast("📊 Filtros limpiados");
 
     });
 
@@ -1114,7 +1221,6 @@ function guardarEstudiante(evento) {
 
     }
 
-    // Validar ID único
     if (estudiantes.some(e => e.identificacion === identificacion)) {
 
         mostrarToast("❌ La identificación ya existe");
@@ -1123,7 +1229,6 @@ function guardarEstudiante(evento) {
 
     }
 
-    // Generar ID incremental
     const maxId = estudiantes.reduce((max, e) => e.id > max ? e.id : max, 0);
 
     const nuevo = {
@@ -1201,7 +1306,7 @@ function cerrarModalHistorial() {
 }
 
 /*==================================================
-        REGISTRAR / EDITAR HISTORIAL (modificado)
+        REGISTRAR / EDITAR HISTORIAL
 ==================================================*/
 
 const formularioHistorial = document.getElementById("formHistorial");
@@ -1264,7 +1369,6 @@ function guardarHistorialAcademico(evento) {
 
     if (editandoId) {
 
-        // EDITAR
         const index = historial.findIndex(h => h.id === parseInt(editandoId));
 
         if (index !== -1) {
@@ -1301,7 +1405,6 @@ function guardarHistorialAcademico(evento) {
 
     } else {
 
-        // NUEVO
         const nuevoHistorial = {
 
             id: historial.length + 1,
@@ -1487,7 +1590,7 @@ function cargarGradosHistorial() {
 }
 
 /*==================================================
-        TABLA HISTORIAL (modificado - agregar Editar)
+        TABLA HISTORIAL
 ==================================================*/
 
 function renderTablaHistorial() {
@@ -1569,7 +1672,7 @@ function renderTablaHistorial() {
 }
 
 /*==================================================
-        EDITAR HISTORIAL (nuevo)
+        EDITAR HISTORIAL
 ==================================================*/
 
 function editarHistorial(id) {
