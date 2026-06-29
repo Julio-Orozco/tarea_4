@@ -188,6 +188,7 @@
 
                 </div>
 
+                <!-- NUEVO: Evolución mensual -->
                 <div class="grafico-card">
 
                     <h3>Evolución mensual</h3>
@@ -196,11 +197,18 @@
 
                 </div>
 
+                <!-- NUEVO: Gráfico Donut -->
                 <div class="grafico-card">
 
-                    <h3>Distribución por tipo de estudiante</h3>
+                    <h3>Distribución por programa</h3>
 
-                    <canvas id="graficoDonut" width="400" height="320"></canvas>
+                    <div style="display:flex; gap:30px; align-items:center; justify-content:center; flex-wrap:wrap;">
+
+                        <canvas id="graficoDonut" width="280" height="280"></canvas>
+
+                        <div id="leyendaDonut" style="display:flex; flex-direction:column; gap:8px;"></div>
+
+                    </div>
 
                 </div>
 
@@ -286,7 +294,7 @@
 
                 <div>
 
-                    <h1>Historial Académico</h1>
+                    <h1>Historial Estudiantil</h1>
 
                     <p>Seguimiento del rendimiento estudiantil</p>
 
@@ -431,15 +439,22 @@
 
                     </div>
 
+                    <!-- MODIFICADO: Nacionalidad ahora es Select -->
                     <div class="campo">
 
-                        <label>Nacionalidad *</label>
+                        <label>Nacionalidad</label>
 
-                        <input
-                            type="text"
-                            id="nacionalidad"
-                            placeholder="Costarricense"
-                            required>
+                        <select id="nacionalidad">
+
+                            <option value="">Seleccione...</option>
+
+                            <option value="Costarricense">Costarricense</option>
+
+                            <option value="Nicaragüense">Nicaragüense</option>
+
+                            <option value="Otro">Otro</option>
+
+                        </select>
 
                     </div>
 
@@ -648,6 +663,44 @@
                 </div>
 
             </form>
+
+        </div>
+
+    </div>
+
+    <!--==========================
+        MODAL - ACCIONES (Ver Historial)
+    ==========================-->
+
+    <div
+        class="modal modal-acciones"
+        id="modalAcciones">
+
+        <div class="modal-contenido">
+
+            <div class="modal-header">
+
+                <h2>
+
+                    Información del Estudiante
+
+                </h2>
+
+                <button
+                    id="cerrarModalAcciones"
+                    class="cerrar">
+
+                    <i class="fa-solid fa-xmark"></i>
+
+                </button>
+
+            </div>
+
+            <div id="contenidoModalAcciones" class="grid-form">
+
+                <!-- Se llena dinámicamente con JS -->
+
+            </div>
 
         </div>
 
