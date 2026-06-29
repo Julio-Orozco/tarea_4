@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EduGestor</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+</head>
+
+<body>
+
+    <!--==============================
+        SIDEBAR
+    ==============================-->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <h2>EduGestor</h2>
+
+        </div>
+
+        <nav class="menu">
+
+            <button class="menu-item activo" data-seccion="dashboard">
+
+                <i class="fa-solid fa-chart-pie"></i>
+
+                <span>Dashboard</span>
+
+            </button>
+
+            <button class="menu-item" data-seccion="estudiantes">
+
+                <i class="fa-solid fa-users"></i>
+
+                <span>Estudiantes</span>
+
+            </button>
+
+            <button class="menu-item" data-seccion="historial">
+
+                <i class="fa-solid fa-clock-rotate-left"></i>
+
+                <span>Historial Académico</span>
+
+            </button>
+
+        </nav>
+
+    </aside>
+
+    <!--==============================
+        CONTENIDO
+    ==============================-->
+
+    <main class="contenido">
+
+        <!--==========================
+            DASHBOARD
+        ==========================-->
+
+        <section id="dashboard" class="pagina activa">
+
+            <header class="encabezado">
+
+                <div>
+
+                    <h1>Dashboard</h1>
+
+                    <p>Gestión y seguimiento estudiantil</p>
+
+                </div>
+
+                <button id="btnLimpiarFiltros" class="btn-secundario">
+
+                    Limpiar filtros
+
+                </button>
+
+            </header>
+
+            <!-- KPIs -->
+
+            <section class="kpis">
+
+                <div class="kpi-card">
+
+                    <div class="kpi-icono">
+
+                        <i class="fa-solid fa-users"></i>
+
+                    </div>
+
+                    <div>
+
+                        <h2 id="kpiTotal">0</h2>
+
+                        <p>Total de estudiantes</p>
+
+                    </div>
+
+                </div>
+
+                <div class="kpi-card">
+
+                    <div class="kpi-icono">
+
+                        <i class="fa-solid fa-user-check"></i>
+
+                    </div>
+
+                    <div>
+
+                        <h2 id="kpiActivos">0</h2>
+
+                        <p>Estudiantes activos</p>
+
+                    </div>
+
+                </div>
+
+                <div class="kpi-card">
+
+                    <div class="kpi-icono">
+
+                        <i class="fa-solid fa-user-xmark"></i>
+
+                    </div>
+
+                    <div>
+
+                        <h2 id="kpiInactivos">0</h2>
+
+                        <p>Estudiantes inactivos</p>
+
+                    </div>
+
+                </div>
+
+                <div class="kpi-card">
+
+                    <div class="kpi-icono">
+
+                        <i class="fa-solid fa-chart-line"></i>
+
+                    </div>
+
+                    <div>
+
+                        <h2 id="kpiExito">0%</h2>
+
+                        <p>Tasa de éxito</p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- Gráficos -->
+
+            <section class="graficos">
+
+                <div class="grafico-card">
+
+                    <h3>Distribución por nivel académico</h3>
+
+                    <div id="graficoNivel"></div>
+
+                </div>
+
+                <div class="grafico-card">
+
+                    <h3>Análisis de riesgo</h3>
+
+                    <div id="graficoRiesgo"></div>
+
+                </div>
+
+                <div class="grafico-card">
+
+                    <h3>Evolución mensual</h3>
+
+                    <canvas id="graficoLinea" width="700" height="320"></canvas>
+
+                </div>
+
+                <div class="grafico-card">
+
+                    <h3>Distribución por tipo de estudiante</h3>
+
+                    <canvas id="graficoDonut" width="400" height="320"></canvas>
+
+                </div>
+
+            </section>
+
+        </section>
+
+        <!--==========================
+            ESTUDIANTES
+        ==========================-->
+
+        <section id="estudiantes" class="pagina">
+
+            <div class="encabezado">
+
+                <div>
+
+                    <h1>Gestión de Estudiantes</h1>
+
+                    <p>Registro y administración</p>
+
+                </div>
+
+                <div class="acciones">
+
+                    <input
+                        type="text"
+                        id="buscarEstudiante"
+                        placeholder="Buscar por nombre o identificación">
+
+                    <button
+                        class="btn-principal"
+                        id="btnNuevo">
+
+                        Registrar Estudiante
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="tabla-contenedor">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Género</th>
+                            <th>Fecha ingreso</th>
+                            <th>Fecha nacimiento</th>
+                            <th>Teléfono</th>
+                            <th>Nacionalidad</th>
+                            <th>Identificación</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaEstudiantes">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!--==========================
+            HISTORIAL ACADÉMICO
+        ==========================-->
+
+        <section id="historial" class="pagina">
+
+            <div class="encabezado">
+
+                <div>
+
+                    <h1>Historial Académico</h1>
+
+                    <p>Seguimiento del rendimiento estudiantil</p>
+
+                </div>
+
+                <button
+                    class="btn-principal"
+                    id="btnRegistrarHistorial">
+
+                    Registrar Historial
+
+                </button>
+
+            </div>
+
+            <div class="tabla-contenedor">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Estudiante</th>
+                            <th>Edad</th>
+                            <th>Centro Educativo</th>
+                            <th>Nivel Académico</th>
+                            <th>Grado</th>
+                            <th>Año</th>
+                            <th>Programa</th>
+                            <th>Nivel de Riesgo</th>
+                            <th>Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaHistorial">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!--==========================
+        MODAL - REGISTRAR ESTUDIANTE
+    ==========================-->
+
+    <div
+        class="modal"
+        id="modalRegistro">
+
+        <div class="modal-contenido">
+
+            <div class="modal-header">
+
+                <h2>
+
+                    Registrar Estudiante
+
+                </h2>
+
+                <button
+                    id="cerrarModal"
+                    class="cerrar">
+
+                    <i class="fa-solid fa-xmark"></i>
+
+                </button>
+
+            </div>
+
+            <form id="formEstudiante">
+
+                <div class="grid-form">
+
+                    <div class="campo">
+
+                        <label>Nombre completo *</label>
+
+                        <input
+                            type="text"
+                            id="nombre"
+                            required>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Género *</label>
+
+                        <select id="genero" required>
+
+                            <option value="">Seleccione...</option>
+
+                            <option value="Femenino">Femenino</option>
+
+                            <option value="Masculino">Masculino</option>
+
+                            <option value="Otro">Otro</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Fecha de ingreso *</label>
+
+                        <input
+                            type="date"
+                            id="ingreso"
+                            required>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Fecha de nacimiento *</label>
+
+                        <input
+                            type="date"
+                            id="nacimiento"
+                            required>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Teléfono *</label>
+
+                        <input
+                            type="text"
+                            id="telefono"
+                            placeholder="8888-8888"
+                            required>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Nacionalidad *</label>
+
+                        <input
+                            type="text"
+                            id="nacionalidad"
+                            placeholder="Costarricense"
+                            required>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Identificación *</label>
+
+                        <input
+                            type="text"
+                            id="identificacion"
+                            placeholder="1-1111-1111"
+                            required>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn-secundario"
+                        id="cancelar">
+
+                        Cancelar
+
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn-principal">
+
+                        Guardar
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!--==========================
+        MODAL - REGISTRAR HISTORIAL
+    ==========================-->
+
+    <div
+        class="modal"
+        id="modalHistorial">
+
+        <div class="modal-contenido">
+
+            <div class="modal-header">
+
+                <h2>
+
+                    Registrar Historial Académico
+
+                </h2>
+
+                <button
+                    id="cerrarModalHistorial"
+                    class="cerrar">
+
+                    <i class="fa-solid fa-xmark"></i>
+
+                </button>
+
+            </div>
+
+            <form id="formHistorial">
+
+                <div class="grid-form">
+
+                    <div class="campo">
+
+                        <label>Estudiante *</label>
+
+                        <select id="selectorEstudiante" required>
+
+                            <option value="">Seleccione un estudiante</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Centro Educativo *</label>
+
+                        <select id="centro" required>
+
+                            <option value="">Seleccione...</option>
+
+                            <option value="CTP Uladislao Gámez Solano">CTP Uladislao Gámez Solano</option>
+
+                            <option value="Escuela 15 de Agosto">Escuela 15 de Agosto</option>
+
+                            <option value="Liceo Experimental Bilingüe">Liceo Experimental Bilingüe</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Nivel Académico *</label>
+
+                        <select id="nivelHistorial" required>
+
+                            <option value="">Seleccione...</option>
+
+                            <option value="Primaria">Primaria</option>
+
+                            <option value="Secundaria">Secundaria</option>
+
+                            <option value="Universidad">Universidad</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Grado *</label>
+
+                        <select id="gradoHistorial" required>
+
+                        </select>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Año *</label>
+
+                        <input
+                            type="number"
+                            id="anioHistorial"
+                            placeholder="2025"
+                            min="2000"
+                            max="2100"
+                            required>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Programa *</label>
+
+                        <select id="programaHistorial" required>
+
+                            <option value="">Seleccione...</option>
+
+                            <option value="Apoyo Académico">Apoyo Académico</option>
+
+                            <option value="Apoyo Psicológico">Apoyo Psicológico</option>
+
+                            <option value="Talleres">Talleres</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="campo">
+
+                        <label>Nivel de Riesgo *</label>
+
+                        <select id="riesgoHistorial" required>
+
+                            <option value="">Seleccione...</option>
+
+                            <option value="Bajo">Bajo</option>
+
+                            <option value="Medio">Medio</option>
+
+                            <option value="Alto">Alto</option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn-secundario"
+                        id="cancelarHistorial">
+
+                        Cancelar
+
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn-principal">
+
+                        Guardar
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!--==========================
+        TOAST
+    ==========================-->
+
+    <div id="toast" class="toast">
+
+        <span id="toastMensaje"></span>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
