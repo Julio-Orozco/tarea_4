@@ -559,9 +559,9 @@ table{
 
 thead{
 
-    background:linear-gradient(135deg, var(--morado) 0%, var(--morado-oscuro) 100%);
+    background: linear-gradient(135deg, #efebeb 0%, #e0dfe1 100%);
     
-    color:white;
+    color:rgb(70, 70, 70);
     
     position:sticky;
     
@@ -581,7 +581,7 @@ thead th:last-child {
 th {
     padding: 16px 18px;
     text-align: left;
-    font-size: 14px;
+    font-size: 19px;
     font-weight: 600;
     letter-spacing: 0.3px;
 }
