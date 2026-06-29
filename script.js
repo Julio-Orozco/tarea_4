@@ -15,6 +15,7 @@ const tablaHistorial = document.getElementById("tablaHistorial");
 
 const modalRegistro = document.getElementById("modalRegistro");
 const modalHistorial = document.getElementById("modalHistorial");
+const modalAcciones = document.getElementById("modalAcciones");
 
 const toast = document.getElementById("toast");
 const toastMensaje = document.getElementById("toastMensaje");
@@ -238,7 +239,7 @@ function renderTabla() {
 
                 <button
                     class="btn-principal"
-                    onclick="abrirHistorial(${estudiante.id})">
+                    onclick="abrirModalAcciones(${estudiante.id})">
 
                     <i class="fa-solid fa-eye"></i>
 
@@ -287,31 +288,138 @@ function cambiarEstado(id) {
 }
 
 /*==================================================
-            ABRIR HISTORIAL DESDE ESTUDIANTES
+            ABRIR MODAL DE ACCIONES (nuevo)
 ==================================================*/
 
-function abrirHistorial(id) {
+function abrirModalAcciones(id) {
 
-    // Cambiar a la sección de historial
+    const estudiante = estudiantes.find(e => e.id === id);
+    if (!estudiante) return;
+
+    const tieneHistorial = historial.some(h => h.estudianteId === id);
+
+    let html = `
+        <div class="campo">
+            <label>Nombre</label>
+            <div class="valor">${estudiante.nombre}</div>
+        </div>
+        <div class="campo">
+            <label>Estado</label>
+            <div class="valor">
+                <span class="estado ${estudiante.estado ? 'activo' : 'inactivo'}">
+                    ${estudiante.estado ? 'Activo' : 'Inactivo'}
+                </span>
+            </div>
+        </div>
+        <div class="campo">
+            <label>Historial Académico</label>
+            <div class="valor">
+    `;
+
+    if (tieneHistorial) {
+        const historialEstudiante = historial.filter(h => h.estudianteId === id);
+        const ultimo = historialEstudiante[historialEstudiante.length - 1];
+
+        html += `
+                <div style="margin-top:8px; font-size:14px; font-weight:normal; color:#555; line-height:1.8;">
+                    <div><strong>Centro:</strong> ${ultimo.centro}</div>
+                    <div><strong>Nivel:</strong> ${ultimo.nivel}</div>
+                    <div><strong>Grado:</strong> ${ultimo.grado}</div>
+                    <div><strong>Año:</strong> ${ultimo.anio}</div>
+                    <div><strong>Programa:</strong> ${ultimo.programa}</div>
+                    <div><strong>Riesgo:</strong> 
+                        <span class="estado ${ultimo.riesgo === 'Bajo' ? 'activo' : ultimo.riesgo === 'Medio' ? 'estado-medio' : 'inactivo'}">
+                            ${ultimo.riesgo}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="acciones-modal">
+            <button class="btn-principal" onclick="irAHistorial(${id})">
+                <i class="fa-solid fa-arrow-right"></i> Ir al Historial
+            </button>
+        </div>
+        `;
+    } else {
+        html += `
+                <div class="mensaje-sin-historial">
+                    <i class="fa-solid fa-info-circle" style="font-size:20px;color:var(--morado);"></i>
+                    <p style="margin-top:10px;">Este estudiante aún no posee un historial académico registrado.</p>
+                </div>
+            </div>
+        </div>
+        <div class="acciones-modal">
+            <button class="btn-principal" onclick="irARegistrarHistorial(${id})">
+                <i class="fa-solid fa-plus"></i> Registrar Historial
+            </button>
+        </div>
+        `;
+    }
+
+    document.getElementById("contenidoModalAcciones").innerHTML = html;
+    modalAcciones.classList.add("activo");
+}
+
+/*==================================================
+        REDIRECCIONES DEL MODAL ACCIONES
+==================================================*/
+
+function irAHistorial(id) {
+    modalAcciones.classList.remove("activo");
+
     botonesMenu.forEach(btn => btn.classList.remove("activo"));
     document.querySelector('[data-seccion="historial"]').classList.add("activo");
 
     paginas.forEach(sec => sec.classList.remove("activa"));
     document.getElementById("historial").classList.add("activa");
 
-    // Seleccionar el estudiante en el selector
-    const selector = document.getElementById("selectorEstudiante");
-    selector.value = id;
-
+    cargarSelectorEstudiantes();
     renderTablaHistorial();
+
+    setTimeout(() => {
+        const selector = document.getElementById("selectorEstudiante");
+        if (selector) {
+            selector.value = id;
+        }
+    }, 50);
+}
+
+function irARegistrarHistorial(id) {
+    modalAcciones.classList.remove("activo");
+
+    botonesMenu.forEach(btn => btn.classList.remove("activo"));
+    document.querySelector('[data-seccion="historial"]').classList.add("activo");
+
+    paginas.forEach(sec => sec.classList.remove("activa"));
+    document.getElementById("historial").classList.add("activa");
+
     cargarSelectorEstudiantes();
 
-    // Volver a seleccionar después de cargar
     setTimeout(() => {
-        selector.value = id;
-    }, 50);
-
+        const selector = document.getElementById("selectorEstudiante");
+        if (selector) {
+            selector.value = id;
+        }
+        // Limpiar cualquier edición pendiente
+        delete document.getElementById("formHistorial").dataset.editando;
+        modalHistorial.classList.add("activo");
+    }, 100);
 }
+
+/*==================================================
+            CERRAR MODAL ACCIONES
+==================================================*/
+
+document.getElementById("cerrarModalAcciones").addEventListener("click", () => {
+    modalAcciones.classList.remove("activo");
+});
+
+modalAcciones.addEventListener("click", (e) => {
+    if (e.target === modalAcciones) {
+        modalAcciones.classList.remove("activo");
+    }
+});
 
 /*==================================================
             TOAST
@@ -536,6 +644,247 @@ function renderGraficoRiesgo(lista = estudiantes) {
 }
 
 /*==================================================
+        GRÁFICO DE LÍNEAS - EVOLUCIÓN MENSUAL (nuevo)
+==================================================*/
+
+function renderGraficoLinea() {
+    const canvas = document.getElementById('graficoLinea');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const ancho = canvas.width;
+    const alto = canvas.height;
+
+    const meses = ['Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    // Calcular evolución de activos (simulado con datos reales)
+    const activosPorMes = [];
+    const totalActivos = estudiantes.filter(e => e.estado).length;
+
+    for (let i = 0; i < 6; i++) {
+        const factor = 0.65 + (i * 0.07);
+        activosPorMes.push(Math.round(totalActivos * Math.min(factor, 1)));
+    }
+
+    const maxValor = Math.max(...activosPorMes) * 1.2 || 10;
+
+    const margen = { top: 30, right: 30, bottom: 50, left: 50 };
+    const anchoGrafico = ancho - margen.left - margen.right;
+    const altoGrafico = alto - margen.top - margen.bottom;
+
+    const x = (i) => margen.left + (i / (meses.length - 1)) * anchoGrafico;
+    const y = (v) => margen.top + altoGrafico - (v / maxValor) * altoGrafico;
+
+    ctx.clearRect(0, 0, ancho, alto);
+
+    // Ejes
+    ctx.beginPath();
+    ctx.strokeStyle = '#E4E4E4';
+    ctx.lineWidth = 1;
+    ctx.moveTo(margen.left, margen.top + altoGrafico);
+    ctx.lineTo(margen.left + anchoGrafico, margen.top + altoGrafico);
+    ctx.moveTo(margen.left, margen.top);
+    ctx.lineTo(margen.left, margen.top + altoGrafico);
+    ctx.stroke();
+
+    // Etiquetas eje X
+    ctx.fillStyle = '#777';
+    ctx.font = '13px Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    meses.forEach((mes, i) => {
+        ctx.fillText(mes, x(i), margen.top + altoGrafico + 25);
+    });
+
+    // Etiquetas eje Y
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+        const valor = Math.round((maxValor / 4) * i);
+        const yPos = margen.top + altoGrafico - (i / 4) * altoGrafico;
+        ctx.fillText(valor, margen.left - 10, yPos + 5);
+        ctx.beginPath();
+        ctx.strokeStyle = '#F0F0F0';
+        ctx.lineWidth = 1;
+        ctx.moveTo(margen.left, yPos);
+        ctx.lineTo(margen.left + anchoGrafico, yPos);
+        ctx.stroke();
+    }
+
+    // Área bajo la curva
+    const gradiente = ctx.createLinearGradient(0, margen.top, 0, margen.top + altoGrafico);
+    gradiente.addColorStop(0, 'rgba(108, 60, 225, 0.25)');
+    gradiente.addColorStop(1, 'rgba(108, 60, 225, 0.02)');
+
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(activosPorMes[0]));
+    activosPorMes.forEach((v, i) => {
+        ctx.lineTo(x(i), y(v));
+    });
+    ctx.lineTo(x(meses.length - 1), margen.top + altoGrafico);
+    ctx.lineTo(x(0), margen.top + altoGrafico);
+    ctx.closePath();
+    ctx.fillStyle = gradiente;
+    ctx.fill();
+
+    // Línea principal
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(activosPorMes[0]));
+    activosPorMes.forEach((v, i) => {
+        ctx.lineTo(x(i), y(v));
+    });
+    ctx.strokeStyle = '#6C3CE1';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Puntos y etiquetas
+    activosPorMes.forEach((v, i) => {
+        const cx = x(i);
+        const cy = y(v);
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#6C3CE1';
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 12px Segoe UI, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(v, cx, cy - 14);
+    });
+
+    // Animación
+    canvas.style.opacity = '0';
+    setTimeout(() => {
+        canvas.style.transition = 'opacity 0.8s ease';
+        canvas.style.opacity = '1';
+    }, 300);
+}
+
+/*==================================================
+        GRÁFICO DONUT - DISTRIBUCIÓN POR PROGRAMA (nuevo)
+==================================================*/
+
+function renderGraficoDonut() {
+    const canvas = document.getElementById('graficoDonut');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const centroX = canvas.width / 2;
+    const centroY = canvas.height / 2;
+    const radio = 110;
+
+    const programas = {
+        'Apoyo Académico': 0,
+        'Apoyo Psicológico': 0,
+        'Talleres': 0
+    };
+
+    historial.forEach(h => {
+        if (programas[h.programa] !== undefined) {
+            programas[h.programa]++;
+        }
+    });
+
+    const total = historial.length || 1;
+
+    const colores = ['#6C3CE1', '#8B6CE6', '#B59BFF'];
+    const labels = Object.keys(programas);
+    const values = Object.values(programas);
+    const porcentajes = values.map(v => Math.round((v / total) * 100));
+
+    let anguloInicio = -Math.PI / 2;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    values.forEach((valor, i) => {
+        if (valor === 0) return;
+
+        const fraccion = valor / total;
+        const anguloFin = anguloInicio + (fraccion * 2 * Math.PI);
+
+        ctx.beginPath();
+        ctx.moveTo(centroX, centroY);
+        ctx.arc(centroX, centroY, radio, anguloInicio, anguloFin);
+        ctx.closePath();
+        ctx.fillStyle = colores[i];
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        if (fraccion > 0.08) {
+            const anguloMedio = anguloInicio + (fraccion * Math.PI);
+            const textoX = centroX + (radio * 0.6) * Math.cos(anguloMedio);
+            const textoY = centroY + (radio * 0.6) * Math.sin(anguloMedio);
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Segoe UI, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(porcentajes[i] + '%', textoX, textoY);
+        }
+
+        anguloInicio = anguloFin;
+    });
+
+    // Círculo interior
+    ctx.beginPath();
+    ctx.arc(centroX, centroY, 65, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.shadowColor = 'rgba(0,0,0,0.05)';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#6C3CE1';
+    ctx.font = 'bold 22px Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(total, centroX, centroY - 8);
+
+    ctx.fillStyle = '#777';
+    ctx.font = '12px Segoe UI, Arial, sans-serif';
+    ctx.fillText('Total', centroX, centroY + 20);
+
+    // Leyenda
+    const leyenda = document.getElementById('leyendaDonut');
+    if (leyenda) {
+        leyenda.innerHTML = '';
+        labels.forEach((label, i) => {
+            const item = document.createElement('div');
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
+            item.style.gap = '10px';
+            item.style.fontSize = '14px';
+            item.style.color = '#333';
+
+            const colorBox = document.createElement('span');
+            colorBox.style.display = 'inline-block';
+            colorBox.style.width = '14px';
+            colorBox.style.height = '14px';
+            colorBox.style.borderRadius = '4px';
+            colorBox.style.background = colores[i];
+
+            const texto = document.createElement('span');
+            texto.textContent = `${label}: ${porcentajes[i]}% (${values[i]})`;
+
+            item.appendChild(colorBox);
+            item.appendChild(texto);
+            leyenda.appendChild(item);
+        });
+    }
+
+    canvas.style.opacity = '0';
+    setTimeout(() => {
+        canvas.style.transition = 'opacity 0.8s ease';
+        canvas.style.opacity = '1';
+    }, 400);
+}
+
+/*==================================================
             FILTROS
 ==================================================*/
 
@@ -583,6 +932,10 @@ document
 
         renderGraficoRiesgo();
 
+        renderGraficoLinea();
+
+        renderGraficoDonut();
+
     });
 
 /*==================================================
@@ -592,6 +945,10 @@ document
 renderGraficoNivel();
 
 renderGraficoRiesgo();
+
+renderGraficoLinea();
+
+renderGraficoDonut();
 
 /*==================================================
             BUSCADOR - ESTUDIANTES
@@ -665,7 +1022,7 @@ function renderTablaFiltrada(lista) {
 
                     class="btn-principal"
 
-                    onclick="abrirHistorial(${estudiante.id})">
+                    onclick="abrirModalAcciones(${estudiante.id})">
 
                     <i class="fa-solid fa-eye"></i>
 
@@ -747,13 +1104,11 @@ function guardarEstudiante(evento) {
 
         !telefono ||
 
-        !nacionalidad ||
-
         !identificacion
 
     ) {
 
-        mostrarToast("❌ Complete todos los campos");
+        mostrarToast("❌ Complete todos los campos obligatorios");
 
         return;
 
@@ -785,7 +1140,7 @@ function guardarEstudiante(evento) {
 
         telefono,
 
-        nacionalidad,
+        nacionalidad: nacionalidad || "Otro",
 
         identificacion,
 
@@ -823,6 +1178,8 @@ btnRegistrarHistorial.addEventListener("click", () => {
 
     cargarSelectorEstudiantes();
 
+    delete document.getElementById("formHistorial").dataset.editando;
+
     modalHistorial.classList.add("activo");
 
 });
@@ -839,10 +1196,12 @@ function cerrarModalHistorial() {
 
     document.getElementById("gradoHistorial").innerHTML = "";
 
+    delete document.getElementById("formHistorial").dataset.editando;
+
 }
 
 /*==================================================
-        REGISTRAR HISTORIAL
+        REGISTRAR / EDITAR HISTORIAL (modificado)
 ==================================================*/
 
 const formularioHistorial = document.getElementById("formHistorial");
@@ -891,7 +1250,6 @@ function guardarHistorialAcademico(evento) {
 
     }
 
-    // Verificar que el estudiante existe
     const estudiante = estudiantes.find(e => e.id === estudianteId);
 
     if (!estudiante) {
@@ -902,31 +1260,77 @@ function guardarHistorialAcademico(evento) {
 
     }
 
-    const nuevoHistorial = {
+    const editandoId = document.getElementById("formHistorial").dataset.editando;
 
-        id: historial.length + 1,
+    if (editandoId) {
 
-        estudianteId: estudianteId,
+        // EDITAR
+        const index = historial.findIndex(h => h.id === parseInt(editandoId));
 
-        estudianteNombre: estudiante.nombre,
+        if (index !== -1) {
 
-        edad: calcularEdad(estudiante.nacimiento),
+            historial[index] = {
 
-        centro,
+                ...historial[index],
 
-        nivel,
+                estudianteId: estudianteId,
 
-        grado,
+                estudianteNombre: estudiante.nombre,
 
-        anio: parseInt(anio),
+                edad: calcularEdad(estudiante.nacimiento),
 
-        programa,
+                centro,
 
-        riesgo
+                nivel,
 
-    };
+                grado,
 
-    historial.push(nuevoHistorial);
+                anio: parseInt(anio),
+
+                programa,
+
+                riesgo
+
+            };
+
+            mostrarToast("✅ Historial actualizado correctamente");
+
+        }
+
+        delete document.getElementById("formHistorial").dataset.editando;
+
+    } else {
+
+        // NUEVO
+        const nuevoHistorial = {
+
+            id: historial.length + 1,
+
+            estudianteId: estudianteId,
+
+            estudianteNombre: estudiante.nombre,
+
+            edad: calcularEdad(estudiante.nacimiento),
+
+            centro,
+
+            nivel,
+
+            grado,
+
+            anio: parseInt(anio),
+
+            programa,
+
+            riesgo
+
+        };
+
+        historial.push(nuevoHistorial);
+
+        mostrarToast("✅ Historial registrado correctamente");
+
+    }
 
     guardarHistorial();
 
@@ -936,9 +1340,9 @@ function guardarHistorialAcademico(evento) {
 
     renderGraficoRiesgo();
 
-    cerrarModalHistorial();
+    renderGraficoDonut();
 
-    mostrarToast("✅ Historial registrado correctamente");
+    cerrarModalHistorial();
 
 }
 
@@ -1083,7 +1487,7 @@ function cargarGradosHistorial() {
 }
 
 /*==================================================
-        TABLA HISTORIAL
+        TABLA HISTORIAL (modificado - agregar Editar)
 ==================================================*/
 
 function renderTablaHistorial() {
@@ -1132,9 +1536,7 @@ function renderTablaHistorial() {
 
             <td>
 
-                <span class="estado ${h.riesgo === 'Bajo' ? 'activo' : h.riesgo === 'Medio' ? 'estado-medio' : 'inactivo'}"
-
-                      style="${h.riesgo === 'Medio' ? 'background:#F39C12;' : ''}">
+                <span class="estado ${h.riesgo === 'Bajo' ? 'activo' : h.riesgo === 'Medio' ? 'estado-medio' : 'inactivo'}">
 
                     ${h.riesgo}
 
@@ -1144,13 +1546,13 @@ function renderTablaHistorial() {
 
             <td>
 
-                <button
+                <button class="btn-editar" onclick="editarHistorial(${h.id})" title="Editar">
 
-                    class="btn-secundario"
+                    <i class="fa-solid fa-pen"></i>
 
-                    onclick="eliminarHistorial(${h.id})"
+                </button>
 
-                    style="background:#E74C3C;color:white;padding:6px 12px;">
+                <button class="btn-eliminar" onclick="eliminarHistorial(${h.id})" title="Eliminar">
 
                     <i class="fa-solid fa-trash"></i>
 
@@ -1163,6 +1565,54 @@ function renderTablaHistorial() {
         `;
 
     });
+
+}
+
+/*==================================================
+        EDITAR HISTORIAL (nuevo)
+==================================================*/
+
+function editarHistorial(id) {
+
+    const registro = historial.find(h => h.id === id);
+
+    if (!registro) {
+
+        mostrarToast('❌ Registro no encontrado');
+
+        return;
+
+    }
+
+    cargarSelectorEstudiantes();
+
+    setTimeout(() => {
+
+        document.getElementById('selectorEstudiante').value = registro.estudianteId;
+
+        document.getElementById('centro').value = registro.centro;
+
+        document.getElementById('nivelHistorial').value = registro.nivel;
+
+        cargarGradosHistorial();
+
+        setTimeout(() => {
+
+            document.getElementById('gradoHistorial').value = registro.grado;
+
+        }, 50);
+
+        document.getElementById('anioHistorial').value = registro.anio;
+
+        document.getElementById('programaHistorial').value = registro.programa;
+
+        document.getElementById('riesgoHistorial').value = registro.riesgo;
+
+        document.getElementById('formHistorial').dataset.editando = id;
+
+        modalHistorial.classList.add('activo');
+
+    }, 100);
 
 }
 
@@ -1183,6 +1633,8 @@ function eliminarHistorial(id) {
         renderGraficoNivel();
 
         renderGraficoRiesgo();
+
+        renderGraficoDonut();
 
         mostrarToast("✅ Historial eliminado correctamente");
 
